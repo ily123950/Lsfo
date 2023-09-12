@@ -23,9 +23,35 @@ local function teleportPartsToPosition(x, y, z)
     end
 end
 
+local function teleportPartToPosition(sizeX, sizeY, sizeZ, x, y, z)
+    local folder = game:GetService("Workspace").Terrain["_Game"]:FindFirstChild("Folder")
+
+    if folder then
+        for _, part in pairs(folder:GetChildren()) do
+            if part:IsA("BasePart") then
+                local partSize = part.Size
+                if partSize == Vector3.new(sizeX, sizeY, sizeZ) then
+                    local newPosition = Vector3.new(x, y, z)
+                    part.CFrame = CFrame.new(newPosition)
+
+                    -- Send a notification on successful teleportation
+                    local notificationText = string.format("Part teleported to %d, %d, %d!", x, y, z)
+                    StarterGui:SetCore("SendNotification", {
+                        Title = "Teleportation",
+                        Text = notificationText,
+                        Duration = 3,
+                    })
+                end
+            end
+        end
+    else
+        warn("Folder not found in Terrain")
+    end
+end
+
 game.Players.LocalPlayer.Chatted:Connect(function(msg)
-    local prefix = ".pmove"
-    if string.sub(msg, 1, #prefix) == prefix then
+    local prefix = string.match(msg, "%S+")
+    if prefix == ".pmove" then
         local arguments = string.sub(msg, #prefix + 1)
         local x, y, z = arguments:match("(%S+)%s+(%S+)%s+(%S+)")
         
@@ -33,6 +59,15 @@ game.Players.LocalPlayer.Chatted:Connect(function(msg)
             teleportPartsToPosition(tonumber(x), tonumber(y), tonumber(z))
         else
             warn("Usage: .pmove <x> <y> <z>")
+        end
+    elseif prefix == ".spmove" then
+        local arguments = string.sub(msg, #prefix + 1)
+        local sizeX, sizeY, sizeZ, x, y, z = arguments:match("(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+        
+        if sizeX and sizeY and sizeZ and x and y and z then
+            teleportPartToPosition(tonumber(sizeX), tonumber(sizeY), tonumber(sizeZ), tonumber(x), tonumber(y), tonumber(z))
+        else
+            warn("Usage: .spmove <sizeX> <sizeY> <sizeZ> <x> <y> <z>")
         end
     end
 end)
