@@ -1,5 +1,3 @@
-local StarterGui = game:GetService("StarterGui")
-
 local function teleportPartsToPosition(x, y, z)
     local folder = game:GetService("Workspace").Terrain["_Game"]:FindFirstChild("Folder")
 
@@ -8,14 +6,6 @@ local function teleportPartsToPosition(x, y, z)
             if part:IsA("BasePart") then
                 local newPosition = Vector3.new(x, y, z)
                 part.CFrame = CFrame.new(newPosition)
-
-                -- Send a notification on successful teleportation
-                local notificationText = string.format("Part teleported to %d, %d, %d!", x, y, z)
-                StarterGui:SetCore("SendNotification", {
-                    Title = "Teleportation",
-                    Text = notificationText,
-                    Duration = 3,
-                })
             end
         end
     else
@@ -33,19 +23,41 @@ local function teleportPartToPosition(sizeX, sizeY, sizeZ, x, y, z)
                 if partSize == Vector3.new(sizeX, sizeY, sizeZ) then
                     local newPosition = Vector3.new(x, y, z)
                     part.CFrame = CFrame.new(newPosition)
-
-                    -- Send a notification on successful teleportation
-                    local notificationText = string.format("Part teleported to %d, %d, %d!", x, y, z)
-                    StarterGui:SetCore("SendNotification", {
-                        Title = "Teleportation",
-                        Text = notificationText,
-                        Duration = 3,
-                    })
                 end
             end
         end
     else
         warn("Folder not found in Terrain")
+    end
+end
+
+local function changePartVelocity(sizeX, sizeY, sizeZ, velX, velY, velZ)
+    local folder = game:GetService("Workspace").Terrain["_Game"]:FindFirstChild("Folder")
+
+    if folder then
+        for _, part in pairs(folder:GetChildren()) do
+            if part:IsA("BasePart") then
+                local partSize = part.Size
+                if partSize == Vector3.new(sizeX, sizeY, sizeZ) then
+                    local newVelocity = Vector3.new(velX, velY, velZ)
+                    part.Velocity = newVelocity
+                end
+            end
+        end
+    else
+        warn("Folder not found in Terrain")
+    end
+end
+
+local function parseAndTeleportParts(input)
+    local sets = {}
+    for set in input:gmatch("(%S+%s+%S+%s+%S+%s+%S+%s+%S+%s+%S+)") do
+        local sizeX, sizeY, sizeZ, x, y, z = set:match("(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+        table.insert(sets, {sizeX = tonumber(sizeX), sizeY = tonumber(sizeY), sizeZ = tonumber(sizeZ), x = tonumber(x), y = tonumber(y), z = tonumber(z)})
+    end
+
+    for _, set in ipairs(sets) do
+        teleportPartToPosition(set.sizeX, set.sizeY, set.sizeZ, set.x, set.y, set.z)
     end
 end
 
@@ -62,12 +74,15 @@ game.Players.LocalPlayer.Chatted:Connect(function(msg)
         end
     elseif prefix == ".spmove" then
         local arguments = string.sub(msg, #prefix + 1)
-        local sizeX, sizeY, sizeZ, x, y, z = arguments:match("(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+        parseAndTeleportParts(arguments)
+    elseif prefix == ".pvel" then
+        local arguments = string.sub(msg, #prefix + 1)
+        local sizeX, sizeY, sizeZ, velX, velY, velZ = arguments:match("(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
         
-        if sizeX and sizeY and sizeZ and x and y and z then
-            teleportPartToPosition(tonumber(sizeX), tonumber(sizeY), tonumber(sizeZ), tonumber(x), tonumber(y), tonumber(z))
+        if sizeX and sizeY and sizeZ and velX and velY and velZ then
+            changePartVelocity(tonumber(sizeX), tonumber(sizeY), tonumber(sizeZ), tonumber(velX), tonumber(velY), tonumber(velZ))
         else
-            warn("Usage: .spmove <sizeX> <sizeY> <sizeZ> <x> <y> <z>")
+            warn("Usage: .pvel <sizeX> <sizeY> <sizeZ> <velX> <velY> <velZ>")
         end
     end
 end)
